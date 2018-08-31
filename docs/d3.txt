@@ -1,0 +1,1 @@
+Javascript é multiparadigma. É orientado a objetos (protótipos), orientado a eventos, procedural e imperativo.

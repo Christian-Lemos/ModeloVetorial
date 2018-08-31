@@ -1,0 +1,1 @@
+Typescript é um super de Javascript.

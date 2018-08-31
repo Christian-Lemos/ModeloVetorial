@@ -1,0 +1,1 @@
+Node.JS não é uma linguagem. É um Runtime!

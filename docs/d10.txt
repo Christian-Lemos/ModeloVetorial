@@ -1,0 +1,1 @@
+Javascript é a linguagem de programação padrão para páginas web.

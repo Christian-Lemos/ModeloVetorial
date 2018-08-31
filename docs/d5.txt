@@ -1,0 +1,1 @@
+Python é melhor que Javascript para Machine Learning
