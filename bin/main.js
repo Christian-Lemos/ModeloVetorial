@@ -50,6 +50,21 @@ function lerDiretorio(diretorio)
 }
 
 
+function getHashMapPalavras(arrayPalavras)
+{
+    let hashPalavras = {}
+    for(let j = 0; j < arrayPalavras.length; j++)
+    {
+        let quantidadePalavra = hashPalavras[arrayPalavras[j]];
+        
+        if(typeof(quantidadePalavra) == 'undefined')
+            hashPalavras[arrayPalavras[j]] = 1
+        else
+            hashPalavras[arrayPalavras[j]] = quantidadePalavra + 1
+    }
+    return hashPalavras
+}
+
 
 lerDiretorio(diretorio).then((resultado) =>
 {
@@ -57,8 +72,8 @@ lerDiretorio(diretorio).then((resultado) =>
      * @type {Array.<ConteudoArquivos>}
      */
     resultado
-    let palavrasSoma = new HashMap();
-    let hashDocumentosPalavras = new HashMap();
+    let palavrasSoma = {}
+    let hashDocumentosPalavras = {}
 
     for(let i = 0; i < resultado.length; i++)
     {
@@ -66,53 +81,111 @@ lerDiretorio(diretorio).then((resultado) =>
         resultado[i].conteudo =  vetorial.RemoverStopWords(resultado[i].conteudo)
         let palavrasConteudo = resultado[i].conteudo.split(' ');
 
-        let hashPalavras = new HashMap();
+        let hashPalavras = {}
         for(let j = 0; j < palavrasConteudo.length; j++)
         {
-            let quantidadePalavra = hashPalavras.get(palavrasConteudo[j]);
+            let quantidadePalavra = hashPalavras[palavrasConteudo[j]];
             
             if(typeof(quantidadePalavra) == 'undefined')
-                hashPalavras.set(palavrasConteudo[j], 1)
+                hashPalavras[palavrasConteudo[j]] = 1
             else
-                hashPalavras.set(palavrasConteudo[j] ,quantidadePalavra + 1)
-            
-            /*let indice = palavras.indexOf(palavrasConteudo[j])
-            if(indice == -1)
-                palavras.push(palavrasConteudo[j])*/
+                hashPalavras[palavrasConteudo[j]] = quantidadePalavra + 1
 
-            let palavra = palavrasSoma.get(palavrasConteudo[j])
+            let palavra = palavrasSoma[palavrasConteudo[j]]
             if(typeof(palavra) == 'undefined')
-                palavrasSoma.set(palavrasConteudo[j], 1)
+                palavrasSoma[palavrasConteudo[j]] = 1
             else
             {
-                palavrasSoma.set(palavrasConteudo[j], palavra + 1)
+                palavrasSoma[palavrasConteudo[j]] = palavra + 1
             }
                 
             
         }
-        hashDocumentosPalavras.set(resultado[i].nome, hashPalavras)
+        hashDocumentosPalavras[resultado[i].nome] = hashPalavras
 
     }   
-    palavrasSoma.forEach(function(value, key) {
-        console.log(key + " : " + value);
-        console.log("-------------")
-    });
-
-    let tfidfdocs = new HashMap();
+    let tfidfs = {}
+    
     for(let i = 0; i < resultado.length; i++)
     {  
-       let doc = hashDocumentosPalavras.get(resultado[i].nome) 
-       console.log(doc)
+       let doc = hashDocumentosPalavras[resultado[i].nome]
+       let addtfidf = []
+       for(let palavra in palavrasSoma)
+       {
+            let tfidf;
+            let multiplicador = doc[palavra]
+            if(typeof(multiplicador) === 'undefined')
+                tfidf = 0
+            else
+            {
+                let log = Math.log10(resultado.length / palavrasSoma[palavra])
+                tfidf = multiplicador * log
+            }
+            addtfidf.push ({termo : palavra, tfidf : tfidf})
+       }
+       tfidfs[resultado[i].nome] = addtfidf
+       
     }
 
+    var rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
+      });
+      
+    rl.on('line', function(linha){
+        linha =  vetorial.RemoverStopWords(linha)
+        let palavrasbusca = linha.split(' ');
+        let tfidfbusca =  {}
+        let hashmapbusca = getHashMapPalavras(palavrasbusca)
+
+        for(let palavra in palavrasSoma)
+        {
+            let tfidf;
+            let multiplicador = hashmapbusca[palavra]
+            if(typeof(multiplicador) === 'undefined')
+                tfidf = 0
+            else
+            {
+                let logm = Math.log10(resultado.length / palavrasSoma[palavra])
+                tfidf = multiplicador * logm
+            }
+            
+            tfidfbusca[palavra] = tfidf
+        }
+        let rank = []
+        for(let tdoc in tfidfs)
+        {
+            let dividendo = 0;
+            let divisor1 = 0;
+            let divisor2 = 0;
+            for(let j = 0; j < tfidfs[tdoc].length; j++)
+            {
+                dividendo += (tfidfs[tdoc][j].tfidf * tfidfbusca[tfidfs[tdoc][j].termo])
+                divisor2 += Math.pow(tfidfs[tdoc][j].tfidf, 2)
+            }
+
+            for(let palavra in tfidfbusca)
+                divisor1 += Math.pow(tfidfbusca[palavra], 2)
+
+            let divisor = Math.sqrt(divisor1 * divisor2)
+            
+            let simdoc = (divisor != 0) ? dividendo / divisor : 0
+
+            rank.push({documento : tdoc, sim : simdoc})
+        }
+        rank.sort(CompararRank);
+        console.log(rank)
+        
+    })
 })
 
-var rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-  });
-  
-rl.on('line', function(line){
-    console.log(line);
-})
+
+function CompararRank(a, b)
+{
+    if (a.sim < b.sim)
+        return 1;
+    if (a.sim > b.sim)
+        return -1;
+    return 0;
+}

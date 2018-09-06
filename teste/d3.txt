@@ -1,0 +1,1 @@
+PostgreSQL e propriedades ACID

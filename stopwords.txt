@@ -25,7 +25,6 @@ do
 dois
 dos
 e
-é
 ela
 ele
 em
